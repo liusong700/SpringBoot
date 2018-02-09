@@ -5,10 +5,13 @@ import com.test.springboot.service.TestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Controller
 public class TestController {
 
     private final static Logger logger = LoggerFactory.getLogger(TestController.class);
@@ -20,7 +23,13 @@ public class TestController {
         this.testService = testService;
     }
 
-    @RequestMapping("/")
+    @GetMapping("/")
+    public String index(){
+        return "index";
+    }
+
+    @RequestMapping("/query")
+    @ResponseBody
     public String test() {
         Member member = new Member();
         member.setRegNo(169090695);
@@ -31,6 +40,7 @@ public class TestController {
     }
 
     @RequestMapping("/update")
+    @ResponseBody
     public String update() {
         Member member = new Member();
         member.setRegNo(169090695);
@@ -41,6 +51,7 @@ public class TestController {
     }
 
     @RequestMapping("/insert")
+    @ResponseBody
     public String insert() {
         Member member = new Member();
         member.setRegNo(169190695);
