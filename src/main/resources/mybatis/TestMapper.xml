@@ -24,4 +24,12 @@
         update `member` set `nick_name`=#{nickName} where `reg_no`=#{regNo}
     </update>
 
+    <insert id="insertMember" parameterType="com.test.springboot.entity.Member">
+        insert into `member`
+        (`reg_no`,`nick_name`,`real_name`)
+        values (#{regNo},#{nickName},#{realName})
+    </insert>
+
+
+
 </mapper>

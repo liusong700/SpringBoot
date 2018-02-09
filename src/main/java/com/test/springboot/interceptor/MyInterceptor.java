@@ -1,5 +1,6 @@
 package com.test.springboot.interceptor;
 
+import com.test.springboot.util.MyRunnable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -32,27 +33,27 @@ import java.util.concurrent.Executors;
 @Component
 public class MyInterceptor implements Interceptor {
 
+    private static final String[] cars = {"car", "trans_reply", "car_busy_time", "car_filter", "trans_filter",
+            "car_tags", "member"};
+
     private static final Logger logger = LoggerFactory.getLogger(MyInterceptor.class);
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
 
-    private Properties properties;
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         long startTime = System.currentTimeMillis();
         MappedStatement mappedStatement = (MappedStatement) invocation
                 .getArgs()[0];
-        String sqlId = mappedStatement.getId();
         Object parameter = invocation.getArgs()[1];
         SqlCommandType sqlCommandType = mappedStatement.getSqlCommandType();
         BoundSql boundSql = mappedStatement.getBoundSql(parameter);
         Configuration configuration = mappedStatement.getConfiguration();
-        String sql = getSql(configuration, boundSql, sqlId);
-        sql = sql.replaceAll("`","");
+        String sql = getSql(configuration, boundSql).replaceAll("`", "");
         if (!StringUtils.isEmpty(sql)) {
             String tableName = null;
-            Map<String, String> paramMap = new HashMap<String, String>();
-            Map<String, String> conditionMap = new HashMap<String, String>();
+            Map<String, String> paramMap = new HashMap<>();
+            Map<String, String> conditionMap = new HashMap<>();
             sql = sql.toLowerCase();
             if (SqlCommandType.UPDATE == sqlCommandType) {
                 tableName = StringUtils.trimToEmpty(sql.substring(sql.indexOf("update ") + 7, sql.indexOf(" set")).trim());
@@ -96,10 +97,8 @@ public class MyInterceptor implements Interceptor {
                     }
                 }
             }
-            logger.info("tableName:{}", tableName);
-            logger.info("conditionMap:{}", conditionMap);
+            sendMQ(sqlCommandType, tableName, paramMap, conditionMap);
         }
-        sendMQ(parameter);
         long endTime = System.currentTimeMillis();
         logger.info("当前程序耗时：" + (endTime - startTime) + "ms");
         return invocation.proceed();
@@ -112,15 +111,14 @@ public class MyInterceptor implements Interceptor {
 
     @Override
     public void setProperties(Properties properties) {
-        this.properties = properties;
+
     }
 
-    private static String getSql(Configuration configuration, BoundSql boundSql, String sqlId) {
+    private static String getSql(Configuration configuration, BoundSql boundSql) {
         try {
-            String sql = showSql(configuration, boundSql);
-            return sql;
+            return showSql(configuration, boundSql);
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return "";
     }
@@ -165,14 +163,27 @@ public class MyInterceptor implements Interceptor {
         return value;
     }
 
-    private void sendMQ(Object parameter) {
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronizationAdapter() {
-                    @Override
-                    public void afterCommit() {
-                        executorService.submit(() -> logger.info("parameter:{}", parameter));
-                    }
-                }
-        );
+    private void sendMQ(SqlCommandType sqlCommandType, String tableName, Map<String, String> paramMap, Map<String, String> conditionMap) {
+        if (Arrays.asList(cars).contains(tableName)) {
+            String regNo = "";
+            if (sqlCommandType.equals(SqlCommandType.INSERT)) {
+                regNo = paramMap.get("reg_no");
+            } else if (sqlCommandType.equals(SqlCommandType.UPDATE) || sqlCommandType
+                    .equals(SqlCommandType.DELETE)) {
+                regNo = conditionMap.get("reg_no");
+            }
+            if (!StringUtils.isEmpty(regNo)) {
+                String finalRegNo = regNo;
+                TransactionSynchronizationManager.registerSynchronization(
+                        new TransactionSynchronizationAdapter() {
+                            @Override
+                            public void afterCommit() {
+                                MyRunnable runnable = new MyRunnable(finalRegNo);
+                                executorService.submit(runnable);
+                            }
+                        }
+                );
+            }
+        }
     }
 }

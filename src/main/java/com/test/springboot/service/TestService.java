@@ -44,5 +44,13 @@ public class TestService {
         return ret;
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public int insertMember(Member member){
+        int ret = testMapper.insertMember(member);
+        List<String> list = new ArrayList<>();
+        logger.info(list.get(0));
+        return ret;
+    }
+
 
 }

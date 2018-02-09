@@ -16,4 +16,6 @@ public interface TestMapper {
     Member queryMember2(@Param("regNo") Integer regNo,@Param("nickName") String nickName,@Param("realName") String realName);
 
     int updateMember(Member member);
+
+    int insertMember(Member member);
 }

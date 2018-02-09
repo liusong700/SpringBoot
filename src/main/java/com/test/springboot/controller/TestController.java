@@ -37,7 +37,16 @@ public class TestController {
         member.setNickName("测试事物");
         member.setRealName("牛慧霞");
         int ret = testService.updateMember(member);
-        logger.info("ret:{}", ret);
+        return member.getRealName();
+    }
+
+    @RequestMapping("/insert")
+    public String insert() {
+        Member member = new Member();
+        member.setRegNo(169190695);
+        member.setNickName("测试事物1");
+        member.setRealName("牛慧霞1");
+        int ret = testService.insertMember(member);
         return member.getRealName();
     }
 
