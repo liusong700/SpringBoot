@@ -6,61 +6,101 @@
 
 <body>
 Welcome<br/>
-<input id="text" type="text" /><button onclick="send()">Send</button>    <button onclick="closeWebSocket()">Close</button>
-<div id="message">
+<input id="text" type="text"/>
+<button onclick="send()" type="button">Send</button>
+<button onclick="closeWebSocket()" type="button">Close</button>
+<span id="names"></span>
+<div>
+    当前链接人数为:<span id="count" style="color: #ff0000;"></span>
 </div>
+<div id="message"></div>
 </body>
 
 <script type="text/javascript">
     var websocket = null;
 
     //判断当前浏览器是否支持WebSocket
-    if('WebSocket' in window){
+    if ('WebSocket' in window) {
         websocket = new WebSocket("ws://localhost:8080/websocket");
     }
-    else{
+    else {
         alert('Not support websocket')
     }
 
     //连接发生错误的回调方法
-    websocket.onerror = function(){
-        setMessageInnerHTML("error");
+    websocket.onerror = function () {
+        setMessageInnerHTML("error", "message");
     };
 
     //连接成功建立的回调方法
-    websocket.onopen = function(event){
-        setMessageInnerHTML("open");
-    }
+    websocket.onopen = function () {
+        //setMessageInnerHTML("open", "message");
+    };
 
     //接收到消息的回调方法
-    websocket.onmessage = function(event){
-        setMessageInnerHTML(event.data);
-    }
+    websocket.onmessage = function (event) {
+        var obj = JSON.parse(event.data);
+        var names = document.getElementById("names");
+        if (obj.type === 1) {
+            document.getElementById("count").innerHTML = obj.message;
+        } else if (obj.type === 2) {
+            document.getElementById("message").innerHTML += obj.message + '<br/>';
+        } else if (obj.type === 3) {
+            var message = obj.message.substring(0, obj.message.indexOf(","));
+            document.getElementById("count").innerHTML = message;
+            var nameTemp = obj.message.substring(obj.message.indexOf(",") + 1, obj.message.length);
+            var checkboxTemp = document.getElementById(nameTemp);
+            names.removeChild(checkboxTemp);
+            names.innerText = "";
+        }
+        for (var i = 0; obj.webSocket.length > i; i++) {
+            var name = obj.webSocket[i].name;
+            var temp = document.getElementById(name);
+            if (!temp) {
+                var checkBox = document.createElement("input");
+                checkBox.setAttribute("type", "checkbox");
+                checkBox.setAttribute("id", name);
+                checkBox.setAttribute("name", "name");
+                checkBox.setAttribute("value", name);
+                names.appendChild(checkBox);
+                names.appendChild(document.createTextNode(name));
+            }
+        }
+    };
 
     //连接关闭的回调方法
-    websocket.onclose = function(){
-        setMessageInnerHTML("close");
-    }
+    websocket.onclose = function () {
+        //setMessageInnerHTML("close", "message");
+    };
 
     //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
-    window.onbeforeunload = function(){
+    window.onbeforeunload = function () {
         websocket.close();
-    }
+    };
 
     //将消息显示在网页上
-    function setMessageInnerHTML(innerHTML){
-        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+    function setMessageInnerHTML(innerHTML, name) {
+        document.getElementById(name).innerHTML += innerHTML + '<br/>';
     }
 
     //关闭连接
-    function closeWebSocket(){
+    function closeWebSocket() {
         websocket.close();
     }
 
     //发送消息
-    function send(){
+    function send() {
         var message = document.getElementById('text').value;
-        websocket.send(message);
+        var ids = document.getElementsByName('name');
+        var value = [];
+        for (var i = 0; ids.length > i; i++) {
+            if (ids[i].checked)
+                value[i] = ids[i].value;
+        }
+        var request = {};
+        request.names = value;
+        request.message = message;
+        websocket.send(JSON.stringify(request));
     }
 </script>
 </html>
