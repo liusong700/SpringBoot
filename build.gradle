@@ -1,41 +1,39 @@
 buildscript {
-	ext {
-		springBootVersion = '1.5.9.RELEASE'
-	}
-	repositories {
-		mavenCentral()
-	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-	}
+    ext {
+        springBootVersion = '2.1.2.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
 }
 
 apply plugin: 'java'
-apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
-apply plugin: 'war'
+apply plugin: 'io.spring.dependency-management'
 
 group = 'com.test'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
 
 dependencies {
-	compile('org.springframework.boot:spring-boot-starter-web')
-	compile("org.springframework.boot:spring-boot-starter-aop")
-	compile('org.springframework.boot:spring-boot-starter-thymeleaf')
-	compile('org.springframework.boot:spring-boot-starter-websocket')
-	compile('org.springframework.boot:spring-boot-starter-tomcat')
-	providedCompile("javax.websocket:javax.websocket-api:1.1")
-	providedCompile("org.apache.tomcat.embed:tomcat-embed-websocket")
-	compile('org.mybatis.spring.boot:mybatis-spring-boot-starter:1.1.1')
-	compile('org.apache.commons:commons-lang3:3.1')
-	compile('com.alibaba:fastjson:1.2.7')
-	runtime('mysql:mysql-connector-java')
-	compileOnly('org.projectlombok:lombok')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:1.1.1'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.apache.commons:commons-lang3:3.1'
+    implementation 'com.alibaba:druid:1.0.31'
+    implementation 'com.alibaba:fastjson:1.2.7'
+    implementation 'mysql:mysql-connector-java'
+    implementation 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
+

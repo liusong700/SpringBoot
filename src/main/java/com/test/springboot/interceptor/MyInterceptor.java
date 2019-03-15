@@ -1,5 +1,6 @@
 package com.test.springboot.interceptor;
 
+import com.alibaba.fastjson.JSONArray;
 import com.test.springboot.util.MyRunnable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.executor.Executor;
@@ -18,11 +19,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.CollectionUtils;
 
 import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Intercepts({
         @Signature(type = Executor.class, method = "update", args = {
@@ -39,10 +42,8 @@ public class MyInterceptor implements Interceptor {
     private static final Logger logger = LoggerFactory.getLogger(MyInterceptor.class);
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
 
-
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        long startTime = System.currentTimeMillis();
         MappedStatement mappedStatement = (MappedStatement) invocation
                 .getArgs()[0];
         Object parameter = invocation.getArgs()[1];
@@ -52,55 +53,43 @@ public class MyInterceptor implements Interceptor {
         String sql = getSql(configuration, boundSql).replaceAll("`", "");
         if (!StringUtils.isEmpty(sql)) {
             String tableName = null;
-            Map<String, String> paramMap = new HashMap<>();
-            Map<String, String> conditionMap = new HashMap<>();
             sql = sql.toLowerCase();
             if (SqlCommandType.UPDATE == sqlCommandType) {
                 tableName = StringUtils.trimToEmpty(sql.substring(sql.indexOf("update ") + 7, sql.indexOf(" set")).trim());
-                String values = sql.substring(sql.indexOf("set ") + 4, sql.indexOf(" where"));
-                String[] params = values.split(",");
-
-                for (String param : params) {
-                    if (param.contains("=")) {
-                        String[] ps = param.split("=");
-                        paramMap.put(StringUtils.trimToEmpty(ps[0]), StringUtils.trimToEmpty(ps[1]));
-                    }
-                }
-                String where = sql.substring(sql.indexOf("where ") + 6);
-                String[] conditions = where.split(",");
-
-                for (String condition : conditions) {
-                    if (condition.contains("=")) {
-                        String[] cs = condition.split("=");
-                        conditionMap.put(StringUtils.trimToEmpty(cs[0]), StringUtils.trimToEmpty(cs[1]));
-                    }
-                }
             } else if (SqlCommandType.INSERT == sqlCommandType) {
                 tableName = StringUtils.trimToEmpty(sql.substring(sql.indexOf("into ") + 5, sql.indexOf("(")));
-                String params = StringUtils.trimToEmpty(sql.substring(sql.indexOf("("), sql.indexOf("values"))).replace("(", "").replace(")", "");
-                String values = StringUtils.trimToEmpty(sql.substring(sql.indexOf("values") + 6)).replace("(", "").replace(")", "");
-                String[] ps = params.split(",");
-                String[] vs = values.split(",");
-                if (ps.length == vs.length) {
-                    for (int i = 0; i < ps.length; i++) {
-                        paramMap.put(StringUtils.trimToEmpty(ps[i]), StringUtils.trimToEmpty(vs[i]));
-                    }
-                }
             } else if (SqlCommandType.DELETE == sqlCommandType) {
                 tableName = StringUtils.trimToEmpty(sql.substring(sql.indexOf("from ") + 5, sql.indexOf("where")));
-                String where = sql.substring(sql.indexOf("where ") + 6);
-                String[] conditions = where.split(" and ");
-                for (String condition : conditions) {
-                    if (condition.contains("=")) {
-                        String[] cs = condition.split("=");
-                        conditionMap.put(StringUtils.trimToEmpty(cs[0]), StringUtils.trimToEmpty(cs[1]));
+            }
+            if (SqlCommandType.UPDATE == sqlCommandType ||
+                    SqlCommandType.INSERT == sqlCommandType ||
+                    SqlCommandType.DELETE == sqlCommandType) {
+                Object parameterObject = boundSql.getParameterObject();
+                List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+                if (parameterMappings.size() > 0 && parameterObject != null) {
+                    Object obj = null;
+                    List<String> regNoList = new ArrayList<>();
+                    for (ParameterMapping parameterMapping : parameterMappings) {
+                        String propertyName = parameterMapping.getProperty();
+                        if ("regNo".equals(propertyName) || propertyName.contains(".regNo")) {
+                            MetaObject metaObject = configuration.newMetaObject(parameterObject);
+                            if (metaObject.hasGetter(propertyName)) {
+                                obj = metaObject.getValue(propertyName);
+                            } else if (boundSql.hasAdditionalParameter(propertyName)) {
+                                obj = boundSql.getAdditionalParameter(propertyName);
+                            }
+                            if (obj != null) {
+                                regNoList.add(obj.toString());
+                            }
+                        }
                     }
+                    if (!CollectionUtils.isEmpty(regNoList)) {
+                        regNoList = regNoList.stream().distinct().collect(Collectors.toList());
+                    }
+                    logger.info("regNo={}", !CollectionUtils.isEmpty(regNoList) ? JSONArray.toJSONString(regNoList) : "");
                 }
             }
-            sendMQ(sqlCommandType, tableName, paramMap, conditionMap);
         }
-        long endTime = System.currentTimeMillis();
-        logger.info("当前程序耗时：" + (endTime - startTime) + "ms");
         return invocation.proceed();
     }
 

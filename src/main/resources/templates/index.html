@@ -101,6 +101,7 @@ Welcome<br/>
         request.names = value;
         request.message = message;
         websocket.send(JSON.stringify(request));
+        document.getElementById('text').value='';
     }
 </script>
 </html>

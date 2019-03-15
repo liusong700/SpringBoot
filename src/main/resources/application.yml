@@ -1,7 +1,18 @@
+mybatis:
+    typeAliasesPackage: com.test.springboot.entity
+    mapperLocations: "classpath*:/mybatis/**/*Mapper.xml"
+
 spring:
     http:
      encoding:
         charset: UTF-8
-     multipart:
-      max-file-size: 100Mb
-      max-request-size: 100Mb
+    datasource:
+        url: "jdbc:mysql://10.0.3.200:3306/atzuchedb?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&autoReconnect=true"
+        username: "autoDev"
+        password: "auto2015"
+    rabbitmq:
+      host: 116.62.214.253
+      port: 5672
+      username: m54600
+      password: liusong123
+      virtual-host: /

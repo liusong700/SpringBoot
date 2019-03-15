@@ -24,6 +24,9 @@ public class MyWebSocket {
     //静态变量，用来记录当前在线连接数。应该把它设计成线程安全的。
     private static int onlineCount = 0;
 
+    //房间号
+    private int roomNo;
+    // 用户命
     private String name;
 
     //concurrent包的线程安全Set，用来存放每个客户端对应的MyWebSocket对象。

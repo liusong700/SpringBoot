@@ -3,33 +3,59 @@
 <mapper namespace="com.test.springboot.mapper.TestMapper">
 
     <resultMap id="member" type="com.test.springboot.entity.Member">
-        <result column="reg_no" property="regNo" />
-        <result column="nick_name" property="nickName" />
-        <result column="real_name" property="realName" />
+        <result column="reg_no" property="regNo"/>
+        <result column="nick_name" property="nickName"/>
+        <result column="real_name" property="realName"/>
     </resultMap>
 
     <select id="appMember" resultMap="member">
-        select `reg_no`,`nick_name`,`real_name` from `member` where `reg_no`=#{regNo} limit 1
+        SELECT
+            `reg_no`,
+            `nick_name`,
+            `real_name`
+        FROM `member`
+        WHERE `reg_no` = #{regNo}
+        LIMIT 1
     </select>
 
     <select id="queryMember1" resultMap="member">
-        select `reg_no`,`nick_name`,`real_name` from `member` where `reg_no`=#{regNo} limit 1
+        SELECT
+            `reg_no`,
+            `nick_name`,
+            `real_name`
+        FROM `member`
+        WHERE `reg_no` = #{regNo}
+        LIMIT 1
     </select>
 
     <select id="queryMember2" resultMap="member">
-        select `reg_no`,`nick_name`,`real_name` from `member` where `reg_no`=#{regNo} limit 1
+        SELECT
+            `reg_no`,
+            `nick_name`,
+            `real_name`
+        FROM `member`
+        WHERE `reg_no` = #{regNo}
+        LIMIT 1
     </select>
 
-    <update id="updateMember" parameterType="com.test.springboot.entity.Member">
-        update `member` set `nick_name`=#{nickName} where `reg_no`=#{regNo}
+    <update id="updateMember" parameterType="java.util.List">
+        update `member` set `nick_name`=
+        <foreach collection="list" item="item" index="index"
+                 separator=" " open="case reg_no" close="end">
+            when #{item.regNo} then #{item.nickName}
+        </foreach>
+        where `reg_no` in
+        <foreach collection="list" index="index" item="item"
+                 separator="," open="(" close=")">
+            #{item.regNo}
+        </foreach>
     </update>
 
     <insert id="insertMember" parameterType="com.test.springboot.entity.Member">
-        insert into `member`
-        (`reg_no`,`nick_name`,`real_name`)
-        values (#{regNo},#{nickName},#{realName})
+        INSERT INTO `member`
+        (`reg_no`, `nick_name`, `real_name`)
+        VALUES (#{regNo}, #{nickName}, #{realName})
     </insert>
-
 
 
 </mapper>
